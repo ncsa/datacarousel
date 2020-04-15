@@ -1,0 +1,209 @@
+{
+    "Outputs": {
+        "BatchSecurityGroup": {
+            "Value": {
+                "Ref": "BatchSecurityGroup"
+            }
+        },
+        "DataCarouselComputeEnvironment": {
+            "Value": {
+                "Ref": "DataCarouselComputeEnvironment"
+            }
+        },
+        "DataCarouselJobQueue": {
+            "Value": {
+                "Ref": "DataCarouselJobQueue"
+            }
+        }
+    },
+    "Parameters": {
+        "SubnetA": {
+            "Type": "String"
+        },
+        "Vpc": {
+            "ConstraintDescription": "Must be a valid VPC ID.",
+            "Type": "AWS::EC2::VPC::Id"
+        },
+        "VpcSecurityGroup": {
+            "ConstraintDescription": "Must be a valid Security Group ID.",
+            "Description": "The VPCs default Security Group",
+            "Type": "AWS::EC2::SecurityGroup::Id"
+        }
+    },
+    "Resources": {
+        "BatchInstanceProfile": {
+            "Properties": {
+                "Path": "/",
+                "Roles": [
+                    {
+                        "Ref": "BatchInstanceRole"
+                    }
+                ]
+            },
+            "Type": "AWS::IAM::InstanceProfile"
+        },
+        "BatchInstanceRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role",
+                    "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+                ],
+                "Path": "/",
+                "Policies": []
+            },
+            "Type": "AWS::IAM::Role"
+        },
+        "BatchJobRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ecs-tasks.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+                ],
+                "Path": "/",
+                "Policies": []
+            },
+            "Type": "AWS::IAM::Role"
+        },
+        "BatchSecurityGroup": {
+            "Properties": {
+                "GroupDescription": "Enable access to Batch instances",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "batch-sg"
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "Vpc"
+                }
+            },
+            "Type": "AWS::EC2::SecurityGroup"
+        },
+        "BatchServiceRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "batch.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole"
+                ],
+                "Path": "/",
+                "Policies": []
+            },
+            "Type": "AWS::IAM::Role"
+        },
+        "ComputeRadience": {
+            "Properties": {
+                "ContainerProperties": {
+                    "Command": [
+                        "python",
+                        "work_flow.py",
+                        "2002",
+                        "12",
+                        "s3://terrafusiondatasampler/P22/TERRA_BF_L1B_O85079_20151216160910_F000_V001.h5"
+                    ],
+                    "Image": "bengal1/climatemarble:latest",
+                    "JobRoleArn": {
+                        "Ref": "BatchJobRole"
+                    },
+                    "Memory": 4096,
+                    "Vcpus": 1
+                },
+                "Type": "Container"
+            },
+            "Type": "AWS::Batch::JobDefinition"
+        },
+        "DataCarouselComputeEnvironment": {
+            "Properties": {
+                "ComputeResources": {
+                    "DesiredvCpus": 1,
+                    "InstanceRole": {
+                        "Ref": "BatchInstanceProfile"
+                    },
+                    "InstanceTypes": [
+                        "m4.large"
+                    ],
+                    "MaxvCpus": 10,
+                    "MinvCpus": 0,
+                    "SecurityGroupIds": [
+                        {
+                            "Ref": "VpcSecurityGroup"
+                        }
+                    ],
+                    "Subnets": [
+                        {
+                            "Ref": "SubnetA"
+                        }
+                    ],
+                    "Tags": {
+                        "Name": "batch-compute-environment",
+                        "Project": "NASA Data Carousel"
+                    },
+                    "Type": "EC2"
+                },
+                "ServiceRole": {
+                    "Ref": "BatchServiceRole"
+                },
+                "Type": "MANAGED"
+            },
+            "Type": "AWS::Batch::ComputeEnvironment"
+        },
+        "DataCarouselJobQueue": {
+            "Properties": {
+                "ComputeEnvironmentOrder": [
+                    {
+                        "ComputeEnvironment": {
+                            "Ref": "DataCarouselComputeEnvironment"
+                        },
+                        "Order": 1
+                    }
+                ],
+                "JobQueueName": "datacarousel-job-queue",
+                "Priority": 1,
+                "State": "ENABLED"
+            },
+            "Type": "AWS::Batch::JobQueue"
+        }
+    }
+}
