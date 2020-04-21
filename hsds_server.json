@@ -1,0 +1,160 @@
+{
+    "Outputs": {
+        "AZ": {
+            "Description": "Availability Zone of the newly created EC2 instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "HdsfServer",
+                    "AvailabilityZone"
+                ]
+            }
+        },
+        "InstanceId": {
+            "Description": "InstanceId of the newly created EC2 instance",
+            "Value": {
+                "Ref": "HdsfServer"
+            }
+        },
+        "PrivateDNS": {
+            "Description": "Private DNSName of the newly created EC2 instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "HdsfServer",
+                    "PrivateDnsName"
+                ]
+            }
+        },
+        "PrivateIP": {
+            "Description": "Private IP address of the newly created EC2 instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "HdsfServer",
+                    "PrivateIp"
+                ]
+            }
+        },
+        "PublicDNS": {
+            "Description": "Public DNSName of the newly created EC2 instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "HdsfServer",
+                    "PublicDnsName"
+                ]
+            }
+        },
+        "PublicIP": {
+            "Description": "Public IP address of the newly created EC2 instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "HdsfServer",
+                    "PublicIp"
+                ]
+            }
+        }
+    },
+    "Parameters": {
+        "KeyName": {
+            "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "HDSFSecurityGroup": {
+            "Properties": {
+                "GroupDescription": "Allows SSH access from anywhere",
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": 22,
+                        "IpProtocol": "tcp",
+                        "ToPort": 22
+                    },
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": 5100,
+                        "IpProtocol": "tcp",
+                        "ToPort": 5100
+                    }
+                ]
+            },
+            "Type": "AWS::EC2::SecurityGroup"
+        },
+        "HdsfServer": {
+            "Properties": {
+                "ImageId": "ami-0f7919c33c90f5b58",
+                "InstanceType": "m4.large",
+                "KeyName": {
+                    "Ref": "KeyName"
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "HDSFSecurityGroup"
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "\n",
+                            [
+                                "#!/bin/bash",
+                                "yum update -y",
+                                "amazon-linux-extras install docker",
+                                "service docker start",
+                                "usermod -a -G docker ec2-user",
+                                "curl -L \"https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)\" -o /usr/local/bin/docker-compose",
+                                "chmod +x /usr/local/bin/docker-compose",
+                                "yum install -y git",
+                                "cat <<-EOL > /opt/start_server.sh",
+                                "git clone https://github.com/HDFGroup/hsds.git",
+                                "export AWS_S3_GATEWAY=http://s3.amazonaws.com",
+                                "export BUCKET_NAME=terrafusiondatasampler",
+                                "export HSDS_ENDPOINT=http://localhost",
+                                {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "export AWS_IAM_ROLE=",
+                                            {
+                                                "Ref": "ServiceRole"
+                                            }
+                                        ]
+                                    ]
+                                },
+                                "cd hsds",
+                                "./runall.sh",
+                                "EOL",
+                                "chmod o+rx /opt/start_server.sh"
+                            ]
+                        ]
+                    }
+                }
+            },
+            "Type": "AWS::EC2::Instance"
+        },
+        "ServiceRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "batch.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole"
+                ],
+                "Path": "/",
+                "Policies": []
+            },
+            "Type": "AWS::IAM::Role"
+        }
+    }
+}
