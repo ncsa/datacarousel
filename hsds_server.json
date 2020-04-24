@@ -71,9 +71,9 @@
                     },
                     {
                         "CidrIp": "0.0.0.0/0",
-                        "FromPort": 5100,
+                        "FromPort": 80,
                         "IpProtocol": "tcp",
-                        "ToPort": 5100
+                        "ToPort": 80
                     }
                 ]
             },
@@ -121,7 +121,7 @@
                                     ]
                                 },
                                 "cd hsds",
-                                "./runall.sh",
+                                "mv admin/config/passwd.default admin/config/passwd.txt./runall.sh",
                                 "EOL",
                                 "chmod o+rx /opt/start_server.sh"
                             ]

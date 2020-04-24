@@ -36,11 +36,11 @@ security_group = t.add_resource(ec2.SecurityGroup(
             ToPort=22,
             CidrIp='0.0.0.0/0'
         ),
-        # Allow ingress to the HDF Server Head Node
+        # Allow ingress to the HDF Service Node
         ec2.SecurityGroupRule(
             IpProtocol='tcp',
-            FromPort=5100,
-            ToPort=5100,
+            FromPort=80,
+            ToPort=80,
             CidrIp='0.0.0.0/0'
         )
 
@@ -69,6 +69,7 @@ ec2_instance = t.add_resource(ec2.Instance(
         "export HSDS_ENDPOINT=http://localhost",
         Join("",["export AWS_IAM_ROLE=",Ref(ServiceRole)]),
         "cd hsds",
+        "mv admin/config/passwd.default admin/config/passwd.txt"
         "./runall.sh",
         "EOL",
         "chmod o+rx /opt/start_server.sh"]))))
