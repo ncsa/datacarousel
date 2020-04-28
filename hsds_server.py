@@ -1,7 +1,7 @@
-from troposphere import Base64, FindInMap, GetAtt, Join
+from troposphere import Base64, FindInMap, GetAtt, Join, Name
 from troposphere import Parameter, Output, Ref, Template
 import troposphere.ec2 as ec2
-from troposphere.iam import Role
+from troposphere.iam import Role, InstanceProfile
 
 t = Template()
 
@@ -17,13 +17,20 @@ ServiceRole = t.add_resource(Role(
     Path='/',
     Policies=[],
     ManagedPolicyArns=[
-        'arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole',
+        'arn:aws:iam::aws:policy/AmazonS3FullAccess',
     ],
     AssumeRolePolicyDocument={'Statement': [{
         'Action': ['sts:AssumeRole'],
         'Effect': 'Allow',
-        'Principal': {'Service': ['batch.amazonaws.com']}
+        'Principal': {'Service': ['ec2.amazonaws.com']}
     }]},
+))
+
+
+ServiceInstanceProfile = t.add_resource(InstanceProfile(
+    "ServiceProfile",
+    Path='/',
+    Roles=[Ref(ServiceRole)]
 ))
 
 security_group = t.add_resource(ec2.SecurityGroup(
@@ -51,6 +58,12 @@ ec2_instance = t.add_resource(ec2.Instance(
     "HdsfServer",
     ImageId="ami-0f7919c33c90f5b58",
     InstanceType="m4.large",
+    # This doesn't work, but it seems like we need to fix a problem in
+    # https://github.com/cloudtools/troposphere/blob/2dc788dbc89c15ce5984f9c40b143494336a2348/troposphere/ec2.py#L311
+    # It only works if the profile exists outside of the template
+    # Til this is investigated you have to manually edit the generated json file and
+    # remove the \" s
+    IamInstanceProfile='{"Ref": "ServiceProfile"}',
     KeyName=Ref(keyname_param),
     SecurityGroups=[Ref(security_group)],
     UserData=Base64(Join("\n", [
@@ -65,11 +78,11 @@ ec2_instance = t.add_resource(ec2.Instance(
         "cat <<-EOL > /opt/start_server.sh",
         "git clone https://github.com/HDFGroup/hsds.git",
         "export AWS_S3_GATEWAY=http://s3.amazonaws.com",
-        "export BUCKET_NAME=terrafusiondatasampler",
-        "export HSDS_ENDPOINT=http://localhost",
+        "export BUCKET_NAME=terra.hsds",
+        'export HSDS_ENDPOINT=http://$(curl http://169.254.169.254/latest/meta-data/public-hostname)',
         Join("",["export AWS_IAM_ROLE=",Ref(ServiceRole)]),
         "cd hsds",
-        "mv admin/config/passwd.default admin/config/passwd.txt"
+        "mv admin/config/passwd.default admin/config/passwd.txt",
         "./runall.sh",
         "EOL",
         "chmod o+rx /opt/start_server.sh"]))))
