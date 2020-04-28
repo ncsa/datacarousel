@@ -81,6 +81,7 @@
         },
         "HdsfServer": {
             "Properties": {
+                "IamInstanceProfile": {"Ref": "ServiceProfile"},
                 "ImageId": "ami-0f7919c33c90f5b58",
                 "InstanceType": "m4.large",
                 "KeyName": {
@@ -107,8 +108,8 @@
                                 "cat <<-EOL > /opt/start_server.sh",
                                 "git clone https://github.com/HDFGroup/hsds.git",
                                 "export AWS_S3_GATEWAY=http://s3.amazonaws.com",
-                                "export BUCKET_NAME=terrafusiondatasampler",
-                                "export HSDS_ENDPOINT=http://localhost",
+                                "export BUCKET_NAME=terra.hsds",
+                                "export HSDS_ENDPOINT=http://$(curl http://169.254.169.254/latest/meta-data/public-hostname)",
                                 {
                                     "Fn::Join": [
                                         "",
@@ -121,7 +122,8 @@
                                     ]
                                 },
                                 "cd hsds",
-                                "mv admin/config/passwd.default admin/config/passwd.txt./runall.sh",
+                                "mv admin/config/passwd.default admin/config/passwd.txt",
+                                "./runall.sh",
                                 "EOL",
                                 "chmod o+rx /opt/start_server.sh"
                             ]
@@ -130,6 +132,17 @@
                 }
             },
             "Type": "AWS::EC2::Instance"
+        },
+        "ServiceProfile": {
+            "Properties": {
+                "Path": "/",
+                "Roles": [
+                    {
+                        "Ref": "ServiceRole"
+                    }
+                ]
+            },
+            "Type": "AWS::IAM::InstanceProfile"
         },
         "ServiceRole": {
             "Properties": {
@@ -142,14 +155,14 @@
                             "Effect": "Allow",
                             "Principal": {
                                 "Service": [
-                                    "batch.amazonaws.com"
+                                    "ec2.amazonaws.com"
                                 ]
                             }
                         }
                     ]
                 },
                 "ManagedPolicyArns": [
-                    "arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole"
+                    "arn:aws:iam::aws:policy/AmazonS3FullAccess"
                 ],
                 "Path": "/",
                 "Policies": []
