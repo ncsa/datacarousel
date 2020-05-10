@@ -204,6 +204,32 @@
                 "State": "ENABLED"
             },
             "Type": "AWS::Batch::JobQueue"
+        },
+        "hsload": {
+            "Properties": {
+                "ContainerProperties": {
+                    "Command": [
+                        "hsload",
+                        "-e",
+                        "http://ec2-3-135-215-235.us-east-2.compute.amazonaws.com",
+                        "--link",
+                        "-p",
+                        "admin",
+                        "-u",
+                        "admin",
+                        "s3://terrafusiondatasampler/P108/TERRA_BF_L1B_O9039_20010830010729_F000_V001.h5",
+                        "/terra/"
+                    ],
+                    "Image": "bengal1/h5pyd:develop",
+                    "JobRoleArn": {
+                        "Ref": "BatchJobRole"
+                    },
+                    "Memory": 4096,
+                    "Vcpus": 1
+                },
+                "Type": "Container"
+            },
+            "Type": "AWS::Batch::JobDefinition"
         }
     }
 }

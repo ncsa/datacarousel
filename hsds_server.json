@@ -53,9 +53,21 @@
         }
     },
     "Parameters": {
+        "AMIImage": {
+            "Description": "AWS Linux AMI Image to use",
+            "Type": "AWS::EC2::Image::Id"
+        },
+        "AZ": {
+            "Description": "Availability Zone to place instance",
+            "Type": "AWS::EC2::AvailabilityZone::Name"
+        },
+        "HSDSBucket": {
+            "Description": "Bucket for storing hsds metadata",
+            "Type": "String"
+        },
         "KeyName": {
             "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
-            "Type": "String"
+            "Type": "AWS::EC2::KeyPair::KeyName"
         }
     },
     "Resources": {
@@ -81,8 +93,13 @@
         },
         "HdsfServer": {
             "Properties": {
+                "AvailabilityZone": {
+                    "Ref": "AZ"
+                },
                 "IamInstanceProfile": {"Ref": "ServiceProfile"},
-                "ImageId": "ami-0f7919c33c90f5b58",
+                "ImageId": {
+                    "Ref": "AMIImage"
+                },
                 "InstanceType": "m4.large",
                 "KeyName": {
                     "Ref": "KeyName"
@@ -108,7 +125,17 @@
                                 "cat <<-EOL > /opt/start_server.sh",
                                 "git clone https://github.com/HDFGroup/hsds.git",
                                 "export AWS_S3_GATEWAY=http://s3.amazonaws.com",
-                                "export BUCKET_NAME=terra.hsds",
+                                {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "export BUCKET_NAME=",
+                                            {
+                                                "Ref": "HSDSBucket"
+                                            }
+                                        ]
+                                    ]
+                                },
                                 "export HSDS_ENDPOINT=http://$(curl http://169.254.169.254/latest/meta-data/public-hostname)",
                                 {
                                     "Fn::Join": [

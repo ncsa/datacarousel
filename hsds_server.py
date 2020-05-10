@@ -9,6 +9,24 @@ keyname_param = t.add_parameter(Parameter(
     "KeyName",
     Description="Name of an existing EC2 KeyPair to enable SSH "
                 "access to the instance",
+    Type="AWS::EC2::KeyPair::KeyName",
+))
+
+az_param = t.add_parameter(Parameter(
+    "AZ",
+    Description="Availability Zone to place instance",
+    Type="AWS::EC2::AvailabilityZone::Name",
+))
+
+ami_param = t.add_parameter(Parameter(
+    "AMIImage",
+    Description="AWS Linux AMI Image to use",
+    Type="AWS::EC2::Image::Id",
+))
+
+bucket_param = t.add_parameter(Parameter(
+    "HSDSBucket",
+    Description="Bucket for storing hsds metadata",
     Type="String",
 ))
 
@@ -56,7 +74,8 @@ security_group = t.add_resource(ec2.SecurityGroup(
 
 ec2_instance = t.add_resource(ec2.Instance(
     "HdsfServer",
-    ImageId="ami-0f7919c33c90f5b58",
+    AvailabilityZone=Ref(az_param),
+    ImageId=Ref(ami_param),
     InstanceType="m4.large",
     # This doesn't work, but it seems like we need to fix a problem in
     # https://github.com/cloudtools/troposphere/blob/2dc788dbc89c15ce5984f9c40b143494336a2348/troposphere/ec2.py#L311
@@ -78,7 +97,7 @@ ec2_instance = t.add_resource(ec2.Instance(
         "cat <<-EOL > /opt/start_server.sh",
         "git clone https://github.com/HDFGroup/hsds.git",
         "export AWS_S3_GATEWAY=http://s3.amazonaws.com",
-        "export BUCKET_NAME=terra.hsds",
+        Join("", ["export BUCKET_NAME=",Ref(bucket_param)]),
         'export HSDS_ENDPOINT=http://$(curl http://169.254.169.254/latest/meta-data/public-hostname)',
         Join("",["export AWS_IAM_ROLE=",Ref(ServiceRole)]),
         "cd hsds",

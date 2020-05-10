@@ -131,6 +131,19 @@ t.add_resource(JobDefinition(
     )
 ))
 
+hsload_command = "hsload -e http://ec2-3-135-215-235.us-east-2.compute.amazonaws.com --link -p admin -u admin s3://terrafusiondatasampler/P108/TERRA_BF_L1B_O9039_20010830010729_F000_V001.h5 /terra/"
+t.add_resource(JobDefinition(
+    "hsload",
+    Type='Container',
+    ContainerProperties=ContainerProperties(
+        Command=hsload_command.split(' '),
+        Image='bengal1/h5pyd:develop',
+        Memory=4096,
+        Vcpus=1,
+        JobRoleArn=Ref(BatchJobRole)
+    )
+))
+
 
 t.add_output([
     Output('DataCarouselComputeEnvironment', Value=Ref(BatchComputeEnvironment)),
