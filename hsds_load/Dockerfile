@@ -28,3 +28,6 @@ RUN cd /tmp                                                                     
     cd h5pyd                                                                       ; \
     python setup.py install                                                        ; \
     cd -
+
+RUN mkdir /opt/nasa
+COPY index_file.py /opt/nasa
