@@ -96,6 +96,14 @@
                 "AvailabilityZone": {
                     "Ref": "AZ"
                 },
+                "BlockDeviceMappings": [
+                    {
+                        "DeviceName": "/dev/xvda",
+                        "Ebs": {
+                            "VolumeSize": 32
+                        }
+                    }
+                ],
                 "IamInstanceProfile": {"Ref": "ServiceProfile"},
                 "ImageId": {
                     "Ref": "AMIImage"

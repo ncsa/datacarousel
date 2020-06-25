@@ -9,7 +9,8 @@ t = Template()
 
 SubnetA = t.add_parameter(Parameter(
     'SubnetA',
-    Type='String'
+    ConstraintDescription="Must be an existent subnet ID, in the chosen VPC.",
+    Type="AWS::EC2::Subnet::Id"
 ))
 
 VpcSecurityGroup = t.add_parameter(Parameter(
@@ -24,6 +25,12 @@ Vpc = t.add_parameter(Parameter(
     'Vpc',
     ConstraintDescription='Must be a valid VPC ID.',
     Type='AWS::EC2::VPC::Id'
+))
+
+HSDSImage = t.add_parameter(Parameter(
+    'HSDSImage',
+    Type='String',
+    Default='bengal1/h5pyd:develop',
 ))
 
 BatchServiceRole = t.add_resource(Role(
@@ -92,7 +99,7 @@ BatchComputeEnvironment = t.add_resource(ComputeEnvironment(
         DesiredvCpus=1,
         MinvCpus=0,
         MaxvCpus=10,
-        InstanceTypes=['m4.large'],
+        InstanceTypes=['optimal'],
         InstanceRole=Ref(BatchInstanceProfile),
         SecurityGroupIds=[Ref(VpcSecurityGroup)],
         Subnets=[
@@ -131,14 +138,15 @@ t.add_resource(JobDefinition(
     )
 ))
 
-hsload_command = "hsload -e http://ec2-3-135-215-235.us-east-2.compute.amazonaws.com --link -p admin -u admin s3://terrafusiondatasampler/P108/TERRA_BF_L1B_O9039_20010830010729_F000_V001.h5 /terra/"
+hsload_command = "python /opt/nasa/index_file.py -e Ref::hsds_endpoint -p admin -u admin -s3 Ref::s3_input_file --domain Ref::domain"
+
 t.add_resource(JobDefinition(
     "hsload",
     Type='Container',
     ContainerProperties=ContainerProperties(
         Command=hsload_command.split(' '),
-        Image='bengal1/h5pyd:develop',
-        Memory=4096,
+        Image=Ref(HSDSImage),
+        Memory=1024,
         Vcpus=1,
         JobRoleArn=Ref(BatchJobRole)
     )
