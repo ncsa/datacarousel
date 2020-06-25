@@ -77,6 +77,14 @@ ec2_instance = t.add_resource(ec2.Instance(
     AvailabilityZone=Ref(az_param),
     ImageId=Ref(ami_param),
     InstanceType="m4.large",
+    BlockDeviceMappings=[
+        ec2.BlockDeviceMapping("RootVolume",
+                               DeviceName='/dev/xvda',
+                               Ebs=ec2.EBSBlockDevice(
+                                VolumeSize=32
+                               ))
+
+    ],
     # This doesn't work, but it seems like we need to fix a problem in
     # https://github.com/cloudtools/troposphere/blob/2dc788dbc89c15ce5984f9c40b143494336a2348/troposphere/ec2.py#L311
     # It only works if the profile exists outside of the template

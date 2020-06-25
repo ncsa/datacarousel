@@ -17,8 +17,13 @@
         }
     },
     "Parameters": {
-        "SubnetA": {
+        "HSDSImage": {
+            "Default": "bengal1/h5pyd:develop",
             "Type": "String"
+        },
+        "SubnetA": {
+            "ConstraintDescription": "Must be an existent subnet ID, in the chosen VPC.",
+            "Type": "AWS::EC2::Subnet::Id"
         },
         "Vpc": {
             "ConstraintDescription": "Must be a valid VPC ID.",
@@ -162,7 +167,7 @@
                         "Ref": "BatchInstanceProfile"
                     },
                     "InstanceTypes": [
-                        "m4.large"
+                        "optimal"
                     ],
                     "MaxvCpus": 10,
                     "MinvCpus": 0,
@@ -209,22 +214,26 @@
             "Properties": {
                 "ContainerProperties": {
                     "Command": [
-                        "hsload",
+                        "python",
+                        "/opt/nasa/index_file.py",
                         "-e",
-                        "http://ec2-3-135-215-235.us-east-2.compute.amazonaws.com",
-                        "--link",
+                        "Ref::hsds_endpoint",
                         "-p",
                         "admin",
                         "-u",
                         "admin",
-                        "s3://terrafusiondatasampler/P108/TERRA_BF_L1B_O9039_20010830010729_F000_V001.h5",
-                        "/terra/"
+                        "-s3",
+                        "Ref::s3_input_file",
+                        "--domain",
+                        "Ref::domain"
                     ],
-                    "Image": "bengal1/h5pyd:develop",
+                    "Image": {
+                        "Ref": "HSDSImage"
+                    },
                     "JobRoleArn": {
                         "Ref": "BatchJobRole"
                     },
-                    "Memory": 4096,
+                    "Memory": 1024,
                     "Vcpus": 1
                 },
                 "Type": "Container"
