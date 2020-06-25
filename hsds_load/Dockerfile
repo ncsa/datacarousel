@@ -27,7 +27,8 @@ RUN cd /tmp                                                                     
     git clone https://github.com/HDFGroup/h5pyd.git                                ; \
     cd h5pyd                                                                       ; \
     python setup.py install                                                        ; \
+    python -m pip install boto3                                                    ; \
     cd -
 
 RUN mkdir /opt/nasa
-COPY index_file.py /opt/nasa
+COPY *.py /opt/nasa/

@@ -8,25 +8,42 @@ import h5pyd as h5py
 
 parser = argparse.ArgumentParser("Index an HDF5 file")
 parser.add_argument("-e", dest="hsds_endpoint", required=True, help="HSDS Endpoint URL")
-parser.add_argument("--domain", required=True)
+parser.add_argument("--ls", dest='list', action='store_const', const=True)
+
+parser.add_argument("--domain", required=False)
 parser.add_argument("-u", dest='user', default='admin')
 parser.add_argument("-p", dest='password', default='admin')
+parser.add_argument("--purge", dest='purge', action='store_const', const=True)
 
 args = parser.parse_args()
 
-sdb = boto3.client('sdb')
+sdb = boto3.client('sdb', region_name='us-west-2')
 
 if 'BasicFusionFiles' not in sdb.list_domains()['DomainNames']:
     sdb.create_domain(
         DomainName="BasicFusionFiles"
     )
 
-q = sdb.select(
-    SelectExpression="select * from BasicFusionFiles where Year = '2002'"
-)
-for item in q['Items']:
-    print(item)
-sys.exit(0)
+if args.purge:
+        print("Purge!!!")
+        sdb.delete_domain(
+            DomainName="BasicFusionFiles"
+        )
+
+        sdb.create_domain(
+            DomainName="BasicFusionFiles"
+        )
+
+if args.list:
+    q = sdb.select(
+        SelectExpression='select * from BasicFusionFiles where MISR_Path="P108"'
+    )
+
+    if 'Items' in q:
+        for item in q['Items']:
+            print(item)
+    sys.exit(0)
+
 misr_paths = h5py.Folder(domain_name=args.domain,
                          endpoint=args.hsds_endpoint, username=args.user,
                          password=args.password
