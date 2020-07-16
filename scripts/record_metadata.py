@@ -19,24 +19,21 @@ args = parser.parse_args()
 
 sdb = boto3.client('sdb', region_name='us-west-2')
 
+if args.purge:
+    print("Purge!!!")
+    sdb.delete_domain(
+        DomainName="BasicFusionFiles"
+    )
+
 if 'BasicFusionFiles' not in sdb.list_domains()['DomainNames']:
     sdb.create_domain(
         DomainName="BasicFusionFiles"
     )
 
-if args.purge:
-        print("Purge!!!")
-        sdb.delete_domain(
-            DomainName="BasicFusionFiles"
-        )
-
-        sdb.create_domain(
-            DomainName="BasicFusionFiles"
-        )
 
 if args.list:
     q = sdb.select(
-        SelectExpression='select * from BasicFusionFiles where MISR_Path="P108"'
+        SelectExpression='select * from BasicFusionFiles where MISR_Path="P125"'
     )
 
     if 'Items' in q:

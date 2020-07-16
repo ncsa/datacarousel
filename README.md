@@ -4,6 +4,19 @@ stored in AWS Glacier archive. It does this by creating a regular process for
 restoring the data to S3 and running researcher-supplied batch jobs in Amazon's
 Elastic Container Serivce against that data.
 
+This repo holds an environment for executing docker-based scripts to ingest
+and manage fused Terra HDF5 files.
+
+* `loader.py` - this script lists object in the Terra Fusion data carousel
+bucket and pushes records to the file index work queue.
+
+* `index_file.py` - This script reads from the work queue and calls the the 
+HSDS load script to index the file and save metadata records in the HSDS server.
+
+* `record_metadata.py` - This script will list files available in the HSDS. It
+extracts some useful metadata and creates records in the `BasicFusionFiles`. 
+These records are used when we submit jobs.
+
 ## AWS Dependent Environment
 The application is provided as a CloudFormation template. This template is 
 produced using the 

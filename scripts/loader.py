@@ -13,22 +13,23 @@ print(queue.url)
 print(queue.attributes.get('DelaySeconds'))
 
 files = client.list_objects(
-    Bucket="terrafusiondatasampler",
-    Prefix="P125"
+    Bucket="datacarousel.restore",
+    Prefix="terrafusion/P108"
 )
 
 timestamp = str(datetime.today().timestamp())
 
 running = 0
 for file in files['Contents']:
-    modis_orbit, filename = file['Key'].split("/")
+    print(file['Key'])
+    restore_folder, modis_orbit, filename = file['Key'].split("/")
     job_name = filename.split(".")[0]
 
     print(modis_orbit, job_name)
     parameters = {
-        'domain': '/terra',
+        'domain': '/terrafusion',
         'hsds_endpoint': 'http://ec2-34-221-10-72.us-west-2.compute.amazonaws.com',
-        's3_input_file': 's3://terrafusiondatasampler/' + file['Key']
+        's3_input_file': 's3://datacarousel.restore/' + file['Key']
     }
 
     print(parameters)
@@ -44,7 +45,7 @@ for file in files['Contents']:
     print(response.get('MD5OfMessageBody'))
 
     running+=1
-    if running > 5:
+    if running > 20:
         break
 
 
