@@ -36,7 +36,7 @@ while not done:
 
         file_bits = urllib.parse.urlparse(params['s3_input_file'])
 
-        domain = params['domain'] + file_bits.path
+        domain = file_bits.path
 
         try:
             f = h5py.File(domain=domain,
@@ -48,9 +48,9 @@ while not done:
         except IOError:
             print("File is not there.. All clear")
 
-        dest_domain = params['domain'] + "/".join(file_bits.path.split("/")[:-1])+"/"
+        dest_domain = "/".join(file_bits.path.split("/")[:-1])+"/"
 
-        status = os.system("hsload -e {} --link --loglevel info -p {} -u {} {} {}".format(
+        status = os.system("hsload -e {} --link --loglevel error -p {} -u {} {} {}".format(
             params['hsds_endpoint'],
             args.password,
             args.user,
